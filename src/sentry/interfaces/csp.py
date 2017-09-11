@@ -94,7 +94,7 @@ class Csp(Interface):
 
         return cls(**kwargs)
 
-    def get_hash(self):
+    def get_hash(self, **kwargs):
         directive = self.effective_directive
         uri = self._normalized_blocked_uri
 

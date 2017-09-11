@@ -1,6 +1,12 @@
 from __future__ import absolute_import
 
+import functools
+import six
+
 from django.core.cache import cache, get_cache, InvalidCacheBackendError
+
+from sentry.interfaces.base import get_interfaces
+from sentry.event_manager import _get_hashes_from_fingerprint, md5_from_hash
 
 
 try:
@@ -11,3 +17,42 @@ except InvalidCacheBackendError:
 
 def get_raw_cache_key(project_id, event_id):
     return 'e:raw:{1}:{0}'.format(project_id, event_id)
+
+
+def get_preprocess_hash_inputs(event):
+    return get_preprocess_hash_inputs_with_reason(event)[1]
+
+
+def get_preprocess_hash_inputs_with_reason(data):
+    interfaces = get_interfaces(data)
+    for interface in six.itervalues(interfaces):
+        # normalize_in_app hasn't run on the data, so
+        # `in_app` isn't necessarily accurate
+        result = interface.get_hash(data['platform'], system_frames=True, is_processed_data=False)
+        if not result:
+            continue
+        return (interface.get_path(), [result])
+    return ('message', [data['message']])
+
+
+def get_preprocess_hashes_from_fingerprint(data, fingerprint):
+    return _get_hashes_from_fingerprint(
+        functools.partial(get_preprocess_hash_inputs, data),
+        fingerprint,
+    )
+
+
+def get_preprocess_hashes(data):
+    fingerprint = data.get('fingerprint')
+    checksum = data.get('checksum')
+
+    if fingerprint:
+        hashes = [
+            md5_from_hash(h) for h in get_preprocess_hashes_from_fingerprint(data, fingerprint)
+        ]
+    elif checksum:
+        hashes = [checksum]
+    else:
+        hashes = [md5_from_hash(h) for h in get_preprocess_hash_inputs(data)]
+
+    return hashes

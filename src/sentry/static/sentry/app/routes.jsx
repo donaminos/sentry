@@ -229,7 +229,7 @@ function routes() {
           component={errorHandler(OrganizationStats)}
         />
         <Route
-          path="/organizations/:orgId/members/newnew/"
+          path="/organizations/:orgId/members/new/"
           component={errorHandler(InviteMember)}
         />
 

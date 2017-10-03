@@ -416,7 +416,9 @@ exports[`OrganizationRepositories render() with a provider renders 1`] = `
                     <ul
                       className="nav nav-stacked"
                     >
-                      <li>
+                      <li
+                        className=""
+                      >
                         <a
                           href="/organizations/org-slug/members/"
                         >
@@ -1089,7 +1091,9 @@ exports[`OrganizationRepositories render() with a provider renders with a reposi
                     <ul
                       className="nav nav-stacked"
                     >
-                      <li>
+                      <li
+                        className=""
+                      >
                         <a
                           href="/organizations/org-slug/members/"
                         >
@@ -1941,7 +1945,9 @@ exports[`OrganizationRepositories render() without any providers renders 1`] = `
                     <ul
                       className="nav nav-stacked"
                     >
-                      <li>
+                      <li
+                        className=""
+                      >
                         <a
                           href="/organizations/org-slug/members/"
                         >

@@ -10,7 +10,7 @@ exports[`CreateProject render() should redirect on zero teams 1`] = `
 >
   <HomeContainer>
     <div
-      className="organization-home"
+      className=" organization-home"
     >
       <div
         className="sub-header flex flex-container flex-vertically-centered"

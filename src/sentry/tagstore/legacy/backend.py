@@ -17,7 +17,7 @@ from six.moves import reduce
 
 from sentry import buffer
 from sentry.tagstore import TagKeyStatus
-from sentry.models import GroupTagKey, TagKey, TagValue, EventTag
+from sentry.models import EventTag, GroupTagKey, GroupTagValue, TagKey, TagValue
 from sentry.tagstore.base import TagStorage
 from sentry.utils.cache import cache
 from sentry.tasks.deletion import delete_tag_key
@@ -28,14 +28,14 @@ class LegacyTagStorage(TagStorage):
         return TagKey.objects.create(project_id=project_id, key=key, **kwargs)
 
     def get_or_create_tag_key(self, project_id, key, **kwargs):
-        return TagKey.objects.get_or_create(project_id=project_id, key=key, defaults=kwargs)
+        return TagKey.objects.get_or_create(project_id=project_id, key=key, **kwargs)
 
     def create_tag_value(self, project_id, key, value, **kwargs):
         return TagValue.objects.create(project_id=project_id, key=key, value=value, **kwargs)
 
     def get_or_create_tag_value(self, project_id, key, value, **kwargs):
         return TagValue.objects.get_or_create(
-            project_id=project_id, key=key, value=value, defaults=kwargs)
+            project_id=project_id, key=key, value=value, **kwargs)
 
     def create_group_tag_key(self, project_id, group_id, key, **kwargs):
         return GroupTagKey.objects.create(project_id=project_id, group_id=group_id,
@@ -43,7 +43,15 @@ class LegacyTagStorage(TagStorage):
 
     def get_or_create_group_tag_key(self, project_id, group_id, key, **kwargs):
         return GroupTagKey.objects.get_or_create(project_id=project_id, group_id=group_id,
-                                                 key=key, defaults=kwargs)
+                                                 key=key, **kwargs)
+
+    def create_group_tag_value(self, project_id, group_id, key, value, **kwargs):
+        return GroupTagValue.objects.create(
+            project_id=project_id, group_id=group_id, key=key, value=value, **kwargs)
+
+    def get_or_create_group_tag_value(self, project_id, group_id, key, value, **kwargs):
+        return GroupTagValue.objects.get_or_create(
+            project_id=project_id, group_id=group_id, key=key, value=value, **kwargs)
 
     def get_tag_key(self, project_id, key, status=TagKeyStatus.VISIBLE):
         from sentry.tagstore.exceptions import TagKeyNotFound
@@ -150,6 +158,38 @@ class LegacyTagStorage(TagStorage):
 
         return list(qs)
 
+    def get_group_tag_value(self, group_id, key, value):
+        from sentry.tagstore.exceptions import GroupTagValueNotFound
+
+        try:
+            return GroupTagValue.objects.get(
+                group_id=group_id,
+                key=key,
+                value=value,
+            )
+        except GroupTagValue.DoesNotExist:
+            raise GroupTagValueNotFound
+
+    def get_group_tag_values(self, group_ids, keys=None, values=None):
+        if isinstance(group_ids, list):
+            qs = GroupTagValue.objects.filter(group_id__in=group_ids)
+        else:
+            qs = GroupTagValue.objects.filter(group_id=group_ids)
+
+        if keys is not None:
+            if isinstance(keys, list):
+                qs = qs.filter(key__in=keys)
+            else:
+                qs = qs.filter(key=keys)
+
+        if values is not None:
+            if isinstance(values, list):
+                qs = qs.filter(value__in=values)
+            else:
+                qs = qs.filter(value=values)
+
+        return list(qs)
+
     def delete_tag_key(self, project_id, key):
         tagkey = self.get_tag_key(project_id, key, status=None)
 
@@ -171,6 +211,11 @@ class LegacyTagStorage(TagStorage):
 
     def delete_all_group_tag_keys(self, group_id):
         GroupTagKey.objects.filter(
+            group_id=group_id,
+        ).delete()
+
+    def delete_all_group_tag_values(self, group_id):
+        GroupTagValue.objects.filter(
             group_id=group_id,
         ).delete()
 

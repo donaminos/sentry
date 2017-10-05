@@ -166,8 +166,8 @@ class Project(Model):
                     group_id=group.id,
                 ).update(group_id=other.id)
 
-                for obj in GroupTagValue.objects.filter(group=group):
-                    obj2, created = GroupTagValue.objects.get_or_create(
+                for obj in tagstore.get_group_tag_values(group_id=group.id):
+                    obj2, created = tagstore.get_or_create_group_tag_value(
                         project_id=project.id,
                         group_id=group.id,
                         key=obj.key,

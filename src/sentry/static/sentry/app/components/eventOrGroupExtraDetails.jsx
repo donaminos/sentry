@@ -19,7 +19,13 @@ const EventOrGroupExtraDetails = React.createClass({
     }),
     numComments: PropTypes.number,
     logger: PropTypes.string,
-    annotations: PropTypes.arrayOf(PropTypes.string)
+    annotations: PropTypes.arrayOf(PropTypes.string),
+    assignedTo: PropTypes.shape({
+      name: PropTypes.string
+    }),
+    status: PropTypes.string,
+    showAssignee: PropTypes.bool,
+    showStatus: PropTypes.bool
   },
 
   mixins: [ProjectState],
@@ -35,7 +41,11 @@ const EventOrGroupExtraDetails = React.createClass({
       subscriptionDetails,
       numComments,
       logger,
-      annotations
+      assignedTo,
+      status,
+      annotations,
+      showAssignee,
+      showStatus
     } = this.props;
     let styles = {};
     if (subscriptionDetails && subscriptionDetails.reason === 'mentioned') {
@@ -90,6 +100,17 @@ const EventOrGroupExtraDetails = React.createClass({
                 />
               );
             })}
+
+          {showAssignee &&
+            assignedTo &&
+            <li>
+              Assigned to {assignedTo.name}
+            </li>}
+          {showStatus &&
+            status &&
+            <li>
+              {status}
+            </li>}
         </ul>
       </div>
     );

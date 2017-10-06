@@ -121,6 +121,8 @@ const SimilarIssueItem = React.createClass({
                 orgId={orgId}
                 projectId={projectId}
                 lastSeen={null}
+                showAssignee
+                showStatus
                 group
               />
             </div>

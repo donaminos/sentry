@@ -54,6 +54,12 @@ class TagStorage(Service):
         'get_group_tag_value',
         'get_group_tag_values',
 
+        'delete_tag_key',
+        'delete_group_tag_key',
+        'delete_all_group_tag_keys',
+        'delete_all_group_tag_values',
+
+        'get_values_seen',
         'get_group_event_ids',
         'get_tag_value_qs',
         'get_group_tag_value_qs',
@@ -61,16 +67,13 @@ class TagStorage(Service):
         'get_top_group_tag_values',
         'get_first_release',
         'get_last_release',
-
-        'delete_tag_key',
-        'delete_group_tag_key',
-        'delete_all_group_tag_keys',
-        'delete_all_group_tag_values',
-
-        'get_values_seen',
         'incr_tag_key_values_seen',
         'incr_tag_value_times_seen',
         'incr_group_tag_value_times_seen',
+        'update_project_for_group',
+        'get_group_ids_for_users',
+        'get_group_tag_values_for_users',
+        'get_tags_for_search_filter',
     )
 
     def is_valid_key(self, key):
@@ -281,5 +284,29 @@ class TagStorage(Service):
     def get_last_release(self, group_id):
         """
         >>> get_last_release(1)
+        """
+        raise NotImplementedError
+
+    def update_project_for_group(self, group_id, old_project_id, new_project_id):
+        """
+        >>> update_project_for_group(1, 2, 3)
+        """
+        raise NotImplementedError
+
+    def get_group_ids_for_users(self, project_ids, event_users, limit=100):
+        """
+        >>> get_group_ids_for_users([1,2], [EventUser(1), EventUser(2)])
+        """
+        raise NotImplementedError
+
+    def get_group_tag_values_for_users(self, event_users, limit=100):
+        """
+        >>> get_group_tag_values_for_users([EventUser(1), EventUser(2)])
+        """
+        raise NotImplementedError
+
+    def get_tags_for_search_filter(self, project_id, tags):
+        """
+        >>> get_tags_for_search_filter(1, [('key1', 'value1'), ('key2', 'value2')])
         """
         raise NotImplementedError

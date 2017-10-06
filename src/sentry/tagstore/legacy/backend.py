@@ -243,6 +243,15 @@ class LegacyTagStorage(TagStorage):
             'value': value,
         }, extra)
 
+    def incr_group_tag_key_values_seen(self, project_id, group_id, key):
+        buffer.incr(GroupTagKey, {
+            'values_seen': 1,
+        }, {
+            'project_id': project_id,
+            'group_id': group_id,
+            'key': key,
+        })
+
     def incr_group_tag_value_times_seen(self, group_id, key, value, extra=None, count=1):
         buffer.incr(
             GroupTagValue, {
@@ -417,3 +426,67 @@ class LegacyTagStorage(TagStorage):
             return None
 
         return last_release.value
+
+    def update_project_for_group(self, group_id, old_project_id, new_project_id):
+        GroupTagValue.objects.filter(
+            project_id=old_project_id,
+            group_id=group_id,
+        ).update(project_id=new_project_id)
+
+    def get_group_ids_for_users(self, project_ids, event_users, limit=100):
+        return GroupTagValue.objects.filter(
+            key='sentry:user',
+            value__in=[eu.tag_value for eu in event_users],
+            project_id__in=project_ids,
+        ).order_by('-last_seen').values_list('group_id', flat=True)[:limit]
+
+    def get_group_tag_values_for_users(self, event_users, limit=100):
+        tag_filters = [Q(value=eu.tag_value, project_id=eu.project_id) for eu in event_users]
+        return list(GroupTagValue.objects.filter(
+            reduce(or_, tag_filters),
+            key='sentry:user',
+        ).order_by('-last_seen')[:limit])
+
+    def get_tags_for_search_filter(self, project_id, tags):
+        from sentry.search.base import ANY, EMPTY
+        # Django doesnt support union, so we limit results and try to find
+        # reasonable matches
+
+        # ANY matches should come last since they're the least specific and
+        # will provide the largest range of matches
+        tag_lookups = sorted(six.iteritems(tags), key=lambda x: x != ANY)
+
+        # get initial matches to start the filter
+        matches = None
+
+        # for each remaining tag, find matches contained in our
+        # existing set, pruning it down each iteration
+        for k, v in tag_lookups:
+            if v is EMPTY:
+                return None
+
+            elif v != ANY:
+                base_qs = GroupTagValue.objects.filter(
+                    key=k,
+                    value=v,
+                    project_id=project_id,
+                )
+
+            else:
+                base_qs = GroupTagValue.objects.filter(
+                    key=k,
+                    project_id=project_id,
+                ).distinct()
+
+            if matches:
+                base_qs = base_qs.filter(group_id__in=matches)
+            else:
+                # restrict matches to only the most recently seen issues
+                base_qs = base_qs.order_by('-last_seen')
+
+            matches = list(base_qs.values_list('group_id', flat=True)[:1000])
+
+            if not matches:
+                return None
+
+        return matches

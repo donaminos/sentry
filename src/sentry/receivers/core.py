@@ -149,7 +149,7 @@ def record_project_tag_count(filters, created, **kwargs):
     if not project_id:
         project_id = filters['project'].id
 
-    tagstore.incr_values_seen(project_id, filters['key'])
+    tagstore.incr_tag_key_values_seen(project_id, filters['key'])
 
 
 @buffer_incr_complete.connect(sender=GroupTagValue, weak=False)

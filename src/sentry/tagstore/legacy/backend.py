@@ -226,7 +226,7 @@ class LegacyTagStorage(TagStorage):
             group_id=group_id,
         ).delete()
 
-    def incr_values_seen(self, project_id, key, count=1):
+    def incr_tag_key_values_seen(self, project_id, key, count=1):
         buffer.incr(TagKey, {
             'values_seen': count,
         }, {
@@ -234,7 +234,7 @@ class LegacyTagStorage(TagStorage):
             'key': key,
         })
 
-    def incr_times_seen(self, project_id, key, value, extra=None, count=1):
+    def incr_tag_value_times_seen(self, project_id, key, value, extra=None, count=1):
         buffer.incr(TagValue, {
             'times_seen': count,
         }, {
@@ -242,6 +242,17 @@ class LegacyTagStorage(TagStorage):
             'key': key,
             'value': value,
         }, extra)
+
+    def incr_group_tag_value_times_seen(self, group_id, key, value, extra=None, count=1):
+        buffer.incr(
+            GroupTagValue, {
+                'times_seen': count,
+            }, {
+                'group_id': group_id,
+                'key': key,
+                'value': value,
+            }, extra
+        )
 
     def get_group_event_ids(self, project_id, group_id, tags):
         tagkeys = dict(
@@ -309,6 +320,12 @@ class LegacyTagStorage(TagStorage):
             queryset = queryset.filter(value__contains=query)
 
         return queryset
+
+    def get_group_tag_value_qs(self, group_id, key):
+        return GroupTagValue.objects.filter(
+            group_id=group_id,
+            key=key,
+        )
 
     def get_values_seen(self, group_ids, key):
         if isinstance(group_ids, list):
@@ -378,3 +395,25 @@ class LegacyTagStorage(TagStorage):
                 last_seen__gte=cutoff,
             ).order_by('-times_seen')[:limit]
         )
+
+    def get_first_release(self, group_id):
+        try:
+            first_release = GroupTagValue.objects.filter(
+                group_id=group_id,
+                key__in=('sentry:release', 'release'),
+            ).order_by('first_seen')[0]
+        except IndexError:
+            return None
+        else:
+            return first_release.value
+
+    def get_last_release(self, group_id):
+        try:
+            last_release = GroupTagValue.objects.filter(
+                group_id=group_id,
+                key__in=('sentry:release', 'release'),
+            ).order_by('-last_seen')[0]
+        except IndexError:
+            return None
+
+        return last_release.value

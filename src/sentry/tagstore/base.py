@@ -56,8 +56,11 @@ class TagStorage(Service):
 
         'get_group_event_ids',
         'get_tag_value_qs',
+        'get_group_tag_value_qs',
         'get_group_tag_value_count',
         'get_top_group_tag_values',
+        'get_first_release',
+        'get_last_release',
 
         'delete_tag_key',
         'delete_group_tag_key',
@@ -65,8 +68,9 @@ class TagStorage(Service):
         'delete_all_group_tag_values',
 
         'get_values_seen',
-        'incr_values_seen',
-        'incr_times_seen',
+        'incr_tag_key_values_seen',
+        'incr_tag_value_times_seen',
+        'incr_group_tag_value_times_seen',
     )
 
     def is_valid_key(self, key):
@@ -214,15 +218,21 @@ class TagStorage(Service):
         """
         raise NotImplementedError
 
-    def incr_values_seen(self, project_id, key, count=1):
+    def incr_tag_key_values_seen(self, project_id, key, count=1):
         """
-        >>> incr_values_seen(1, "key1")
+        >>> incr_tag_key_values_seen(1, "key1")
         """
         raise NotImplementedError
 
-    def incr_times_seen(self, project_id, key, value, extra=None, count=1):
+    def incr_tag_value_times_seen(self, project_id, key, value, extra=None, count=1):
         """
-        >>> incr_times_seen(1, "key1", "value1")
+        >>> incr_tag_value_times_seen(1, "key1", "value1")
+        """
+        raise NotImplementedError
+
+    def incr_group_tag_value_times_seen(self, group_id, key, value, extra=None, count=1):
+        """
+        >>> incr_group_tag_value_times_seen(1, "key1", "value1")
         """
         raise NotImplementedError
 
@@ -238,6 +248,12 @@ class TagStorage(Service):
         """
         raise NotImplementedError
 
+    def get_group_tag_value_qs(self, group_id, key):
+        """
+        >>> get_group_tag_value_qs(1, 'environment')
+        """
+        raise NotImplementedError
+
     def get_values_seen(self, group_ids, key):
         """
         >>> get_values_seen([1, 2], 'key1')
@@ -248,8 +264,22 @@ class TagStorage(Service):
         """
         >>> get_group_tag_value_count(1, 'key1')
         """
+        raise NotImplementedError
 
     def get_top_group_tag_values(self, group_id, key, limit=3):
         """
         >>> get_top_group_tag_values(1, 'key1')
         """
+        raise NotImplementedError
+
+    def get_first_release(self, group_id):
+        """
+        >>> get_first_release(1)
+        """
+        raise NotImplementedError
+
+    def get_last_release(self, group_id):
+        """
+        >>> get_last_release(1)
+        """
+        raise NotImplementedError

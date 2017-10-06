@@ -37,7 +37,7 @@ class OrganizationUserIssuesEndpoint(OrganizationEndpoint):
                 key='sentry:user',
             ).order_by('-last_seen')[:limit]
         else:
-            tags = GroupTagValue.objects.none()
+            tags = []
 
         tags = {t.group_id: t for t in tags}
         if tags:

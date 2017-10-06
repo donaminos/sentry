@@ -243,9 +243,9 @@ class LegacyTagStorage(TagStorage):
             'value': value,
         }, extra)
 
-    def incr_group_tag_key_values_seen(self, project_id, group_id, key):
+    def incr_group_tag_key_values_seen(self, project_id, group_id, key, count=1):
         buffer.incr(GroupTagKey, {
-            'values_seen': 1,
+            'values_seen': count,
         }, {
             'project_id': project_id,
             'group_id': group_id,

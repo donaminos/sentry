@@ -11,7 +11,10 @@ from __future__ import absolute_import
 import six
 
 from collections import defaultdict
-from django.db.models import Q
+from datetime import timedelta
+from django.db import connections, router
+from django.db.models import Q, Sum
+from django.utils import timezone
 from operator import or_
 from six.moves import reduce
 
@@ -19,6 +22,7 @@ from sentry import buffer
 from sentry.tagstore import TagKeyStatus
 from sentry.models import EventTag, GroupTagKey, GroupTagValue, TagKey, TagValue
 from sentry.tagstore.base import TagStorage
+from sentry.utils import db
 from sentry.utils.cache import cache
 from sentry.tasks.deletion import delete_tag_key
 
@@ -315,3 +319,62 @@ class LegacyTagStorage(TagStorage):
         return defaultdict(int, qs.filter(
             key=key,
         ).values_list('group_id', 'values_seen'))
+
+    def get_group_tag_value_count(self, group_id, key):
+        if db.is_postgres():
+            # This doesnt guarantee percentage is accurate, but it does ensure
+            # that the query has a maximum cost
+            using = router.db_for_read(GroupTagValue)
+            cursor = connections[using].cursor()
+            cursor.execute(
+                """
+                SELECT SUM(t)
+                FROM (
+                    SELECT times_seen as t
+                    FROM sentry_messagefiltervalue
+                    WHERE group_id = %s
+                    AND key = %s
+                    ORDER BY last_seen DESC
+                    LIMIT 10000
+                ) as a
+            """, [group_id, key]
+            )
+            return cursor.fetchone()[0] or 0
+
+        cutoff = timezone.now() - timedelta(days=7)
+        return GroupTagValue.objects.filter(
+            group_id=group_id,
+            key=key,
+            last_seen__gte=cutoff,
+        ).aggregate(t=Sum('times_seen'))['t']
+
+    def get_top_group_tag_values(self, group_id, key, limit=3):
+        if db.is_postgres():
+            # This doesnt guarantee percentage is accurate, but it does ensure
+            # that the query has a maximum cost
+            return list(
+                GroupTagValue.objects.raw(
+                    """
+                SELECT *
+                FROM (
+                    SELECT *
+                    FROM sentry_messagefiltervalue
+                    WHERE group_id = %%s
+                    AND key = %%s
+                    ORDER BY last_seen DESC
+                    LIMIT 10000
+                ) as a
+                ORDER BY times_seen DESC
+                LIMIT %d
+            """ % limit, [group_id, key]
+                )
+            )
+
+        cutoff = timezone.now() - timedelta(days=7)
+        return list(
+            GroupTagValue.objects.filter(
+                group_id=group_id,
+                key=key,
+                last_seen__gte=cutoff,
+            ).order_by('-times_seen')[:limit]
+        )

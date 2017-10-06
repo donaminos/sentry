@@ -56,6 +56,8 @@ class TagStorage(Service):
 
         'get_group_event_ids',
         'get_tag_value_qs',
+        'get_group_tag_value_count',
+        'get_top_group_tag_values',
 
         'delete_tag_key',
         'delete_group_tag_key',
@@ -238,6 +240,16 @@ class TagStorage(Service):
 
     def get_values_seen(self, group_ids, key):
         """
-        get_values_seen([1, 2], 'key1')
+        >>> get_values_seen([1, 2], 'key1')
         """
         raise NotImplementedError
+
+    def get_group_tag_value_count(self, group_id, key):
+        """
+        >>> get_group_tag_value_count(1, 'key1')
+        """
+
+    def get_top_group_tag_values(self, group_id, key, limit=3):
+        """
+        >>> get_top_group_tag_values(1, 'key1')
+        """
